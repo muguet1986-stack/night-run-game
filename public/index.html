@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#0d1524">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="친구들과 스마트폰으로 즐기는 2D 실시간 괴물 술래잡기. 숨고, 도망치고, 끝까지 살아남아라!">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <title>NIGHT RUN — 모바일 괴물 술래잡기</title>
+</head>
+<body>
+  <div id="app">
+    <canvas id="gameCanvas" aria-label="실시간 2D 괴물 술래잡기 게임 화면"></canvas>
+    <div id="connection" class="connection-pill"><span id="connectionDot" class="connection-dot"></span><span id="connectionText">서버 연결 중</span></div>
+    <button id="soundBtn" class="sound-button" aria-label="사운드 켜기 또는 끄기" title="사운드 켜기 또는 끄기">♪̸</button>
+
+    <section id="homeView" class="screen home-screen" aria-label="게임 시작 화면">
+      <div class="home-top"><span class="tiny-label"><span class="tiny-dot"></span> MOBILE MULTIPLAYER</span><span class="version">V 2.0</span></div>
+      <div class="hero">
+        <div class="moon-halo"><span class="star st1">✦</span><span class="star st2">✧</span><span class="star st3">✦</span><span class="hero-monster">👾</span><span class="hero-runner">🏃</span><span class="hero-trail">〰</span></div>
+        <div class="hero-kicker">HIDE · RUN · SURVIVE</div>
+        <h1>NIGHT<br><span>RUN<span class="period">.</span></span></h1>
+        <p>이번엔 누가 괴물일까?<br>숨거나 도망쳐. 한 명만 살아도 승리!</p>
+      </div>
+      <div class="home-panel">
+        <label for="nickname">플레이어 이름</label>
+        <input id="nickname" class="input" maxlength="12" placeholder="닉네임 입력" autocomplete="nickname" enterkeyhint="done" />
+        <button id="createBtn" class="btn btn-primary">새로운 방 만들기 <span>↗</span></button>
+        <div class="or-line"><span>친구에게 초대받았나요?</span></div>
+        <div class="join-line"><input id="joinCode" class="input" maxlength="6" placeholder="6자리 초대 코드" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" /><button id="joinBtn" class="btn btn-secondary">입장</button></div>
+        <div id="homeError" class="error" role="alert"></div>
+      </div>
+      <div class="home-footer"><span>✦ 2~12명 실시간 플레이</span><span>스마트폰 터치 조작</span></div>
+    </section>
+
+    <section id="lobbyView" class="screen panel-screen" hidden aria-label="대기실">
+      <div class="section-top"><span class="tiny-label">WAITING ROOM</span><span class="mini-brand">NIGHT RUN ◕</span></div>
+      <div class="section-heading"><h2>친구들과<br><em>함께 도망쳐!</em></h2><p>친구들을 초대하고 준비해 주세요.</p></div>
+      <div class="lobby-panel">
+        <div class="code-head"><span>초대 코드</span><span class="code-status"><span class="tiny-dot"></span> ROOM OPEN</span></div>
+        <div class="room-code" id="lobbyCode">------</div>
+        <button id="inviteBtn" class="btn btn-outline">친구 초대 링크 공유 <span>↗</span></button>
+        <div class="list-heading"><strong>참가 플레이어</strong><span id="lobbyCount">1 / 12</span></div>
+        <div id="lobbyPlayers" class="lobby-list"></div>
+      </div>
+      <div class="rule-strip"><span>👹 2~6명 괴물 1명 · 7~12명 괴물 2명</span><span>⏱ 2분 30초 · 단 한 명이 살아도 일반인 승리</span></div>
+      <div class="panel-bottom"><button id="readyBtn" class="btn btn-primary">준비 완료 ✓</button><button id="startBtn" class="btn btn-primary" hidden>게임 시작하기 →</button><div id="lobbyError" class="error" role="alert"></div><button id="exitBtn" class="text-button">방 나가기</button></div>
+    </section>
+
+    <section id="countdownView" class="screen countdown-screen" hidden aria-label="역할 발표">
+      <div class="tiny-label">SECRET ROLE ASSIGNED</div>
+      <div class="role-reveal"><div id="secretEmoji" class="secret-emoji">🏃</div><div class="reveal-small">당신의 역할은</div><h2 id="secretRole">일반인</h2><p id="secretDescription">괴물을 피해 살아남으세요!</p></div>
+      <div id="countNumber" class="big-count">3</div><div class="count-text">곧 추격전이 시작됩니다</div>
+      <div id="mapPreview" class="preview-map">🌲 안개숲</div>
+    </section>
+
+    <div id="hud" class="hud" hidden>
+      <div class="hud-top"><span id="mapName" class="map-tag">🌲 안개숲</span><span id="roomTag" class="room-tag">#------</span></div>
+      <div class="hud-row"><div id="roleTag" class="role-tag runner-tag"><span>🏃</span> 일반인</div><div class="timer-badge"><span class="timer-icon">◷</span><strong id="timerText">02:30</strong></div><div class="alive-badge"><span>♥</span><b id="aliveText">1 생존</b></div></div>
+      <div id="meter" class="meter"><div class="meter-label"><span>⚡ STAMINA</span><span id="staminaNumber">100%</span></div><div class="meter-track"><div id="staminaFill" class="meter-fill"></div></div></div>
+      <div id="statusBanner" class="status-banner" hidden></div>
+    </div>
+
+    <div id="controls" class="controls" hidden>
+      <div class="joystick-group"><div id="joystick" class="joystick" aria-label="이동 조이스틱"><div class="joystick-cross">+</div><div id="joystickKnob" class="joystick-knob"></div></div><span class="control-caption">MOVE</span></div>
+      <div class="action-group"><div class="minor-actions"><button id="skillBtn" class="action-button skill-button"><span id="skillIcon">🌿</span><b id="skillName">숨기</b><small id="skillInfo">은신 구역</small></button><button id="itemBtn" class="action-button item-button"><span>☁️</span><b>연막탄</b><small id="itemInfo">× 1</small></button></div><button id="sprintBtn" class="action-button sprint-button"><span>⚡</span><b>질주</b><small>HOLD</small></button></div>
+    </div>
+
+    <div id="spectator" class="spectator" hidden><div class="spectator-message">👻 관전 모드</div><div class="spectator-switch"><button id="prevTarget" aria-label="이전 플레이어 관전">❮</button><span id="watchingName">생존자 관전 중</span><button id="nextTarget" aria-label="다음 플레이어 관전">❯</button></div></div>
+
+    <section id="resultView" class="screen panel-screen result-screen" hidden aria-label="게임 결과">
+      <div class="section-top"><span class="tiny-label">MATCH FINISHED</span><span class="mini-brand">NIGHT RUN ◕</span></div>
+      <div class="result-hero"><span id="resultEmoji" class="result-emoji">🏆</span><div class="result-kicker">THE FINAL RESULT</div><h2 id="resultTitle">일반인 승리!</h2><p id="resultReason">단 한 명이 끝까지 살아남았습니다.</p></div>
+      <div class="result-panel"><div class="result-stat-grid"><div><small>생존자</small><strong id="resultSurvivors">1명</strong></div><div><small>괴물 포획</small><strong id="resultCatches">3회</strong></div><div><small>MVP</small><strong id="resultMvp">—</strong></div></div><div class="result-leader-title">플레이 기록</div><div id="resultPlayers" class="result-list"></div></div>
+      <div class="panel-bottom"><button id="restartBtn" class="btn btn-primary" hidden>다시 한 판 ↗</button><p id="waitingRestart" class="small-note" hidden>방장이 다음 판을 준비하는 중...</p><button id="resultExitBtn" class="text-button">나가기</button></div>
+    </section>
+
+    <div id="toast" class="toast" hidden aria-live="polite"></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/client.js"></script>
+</body>
+</html>
