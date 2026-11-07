@@ -156,7 +156,7 @@ function snap(room,viewer) {
     players: roundPlayers.map(p=>{
       const canSee = reveal || (room.status==='countdown' ? p.id===viewer : visible(room,viewerPlayer,p,now));
       return {
-        id:p.id,name:p.name,ready:p.ready,connected:!p.disconnectedAt,spectator:p.spectator,alive:p.alive,
+        id:p.id,name:p.name,ready:p.ready,bot:!!p.bot,connected:!p.disconnectedAt,spectator:p.spectator,alive:p.alive,
         // Never leak a hidden player position to the opposing team.
         role:room.status==='countdown'&&p.id!==viewer ? null : p.role,
         x:canSee?Math.round(p.x):null, y:canSee?Math.round(p.y):null,
@@ -200,7 +200,7 @@ function startRound(room) {
   const selected=new Set();
   while(selected.size<monsters) selected.add(crypto.randomInt(list.length));
   list.forEach((p,i)=> {
-    p.role=selected.has(i)?'monster':'civilian';p.alive=true;p.hidden=false;
+    p.role=room.practice ? (p.id===room.host ? room.practiceRole : (i===1 && room.practiceRole==='civilian' ? 'monster' : 'civilian')) : (selected.has(i)?'monster':'civilian');p.alive=true;p.hidden=false;
     p.dx=0;p.dy=0;p.boost=false;p.stamina=100;p.catches=0;p.caughtAt=0;
     p.hideUntil=0;p.hideReadyAt=0;p.scanUntil=0;p.scanReadyAt=0;
     p.smoke=1;p.survived=0;p.trackAt=0;
@@ -216,7 +216,7 @@ function startRound(room) {
 function resetRoom(room) {
   room.status='lobby';room.winner=null;room.endReason='';room.pickups=[];room.smokes=[];room.tracks=[];
   [...room.players.values()].forEach((p,i)=>{
-    p.ready=false;p.spectator=i>=MAX_PLAYERS;p.role=null;p.alive=true;p.hidden=false;
+    p.ready=!!p.bot;p.spectator=i>=MAX_PLAYERS;p.role=null;p.alive=true;p.hidden=false;
     p.dx=p.dy=0;p.stamina=100;p.catches=0;p.smoke=1;
     p.x=WIDTH/2;p.y=HEIGHT/2;
   });
@@ -257,11 +257,22 @@ io.on('connection',socket=>{
     rooms.set(code,room);socket.data.room=code;socket.join(code);
     reply(ack,true,'',{code,id:socket.id,token:p.token});broadcast(room);
   });
+  socket.on('practice',(payload={},ack)=>{
+    if(socket.data.room) return reply(ack,false,'이미 방에 참가했습니다.');
+    const role=payload?.role==='monster'?'monster':'civilian';
+    const code=roomCode(),p=playerFor(socket,payload?.name);
+    const room={code,host:socket.id,map:MAPS[0],players:new Map([[socket.id,p]]),
+      practice:true,practiceRole:role,status:'lobby',startAt:0,roundEndsAt:0,winner:null,endReason:'',pickups:[],tracks:[],smokes:[]};
+    for(let i=0;i<3;i++) {const id='bot-'+crypto.randomUUID();const bot=playerFor({id},`연습봇 ${i+1}`);bot.bot=true;bot.ready=true;room.players.set(id,bot);}
+    rooms.set(code,room);socket.data.room=code;socket.join(code);
+    reply(ack,true,'',{code,id:socket.id,token:p.token});startRound(room);
+  });
   socket.on('join',(payload={},ack)=>{
     const {name,code} = payload && typeof payload==='object' ? payload : {};
     if(socket.data.room) return reply(ack,false,'이미 방에 참가했습니다.');
     const room=rooms.get(String(code||'').trim().toUpperCase());
     if(!room) return reply(ack,false,'방이 없거나 종료되었습니다.');
+    if(room.practice) return reply(ack,false,'혼자 연습하는 방입니다.');
     if(room.players.size>=20) return reply(ack,false,'관전자 포함 최대 20명까지 입장할 수 있습니다.');
     const spectator=room.status!=='lobby'||active(room).length>=MAX_PLAYERS;
     const p=playerFor(socket,name,spectator);
@@ -332,11 +343,45 @@ io.on('connection',socket=>{
 
 function removePlayer(room,p) {
   room.players.delete(p.id);
-  if(!room.players.size){rooms.delete(room.code);return;}
+  if(!room.players.size || (room.practice && ![...room.players.values()].some(x=>!x.bot))){rooms.delete(room.code);return;}
   if(room.host===p.id) room.host=room.players.keys().next().value;
   if(room.status==='countdown'&&active(room).length<2) resetRoom(room);
   if(room.status==='playing') checkWinner(room);
   broadcast(room);
+}
+// Grid-based route planning lets practice opponents navigate around the same solid obstacles.
+function botDirection(room,bot,target) {
+  const cell=48,cols=Math.floor(WIDTH/cell),rows=Math.floor(HEIGHT/cell);
+  const key=(x,y)=>y*cols+x, valid=(x,y)=>x>=0&&x<cols&&y>=0&&y<rows&&!collide(room.map,(x+.5)*cell,(y+.5)*cell,22);
+  const sx=clamp(Math.floor(bot.x/cell),0,cols-1),sy=clamp(Math.floor(bot.y/cell),0,rows-1);
+  const tx=clamp(Math.floor(target.x/cell),0,cols-1),ty=clamp(Math.floor(target.y/cell),0,rows-1);
+  const queue=[[sx,sy]],prev=new Map([[key(sx,sy),null]]);let best=key(sx,sy),bestDist=Infinity;
+  for(let n=0;n<queue.length;n++){const [x,y]=queue[n],k=key(x,y),d=(x-tx)**2+(y-ty)**2;
+    if(d<bestDist){bestDist=d;best=k;} if(d===0)break;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,nk=key(nx,ny);if(valid(nx,ny)&&!prev.has(nk)){prev.set(nk,k);queue.push([nx,ny]);}}
+  }
+  let k=best,first=k;while(prev.get(k)!=null){first=k;k=prev.get(k);}
+  const point=best===key(sx,sy)?target:{x:(first%cols+.5)*cell,y:(Math.floor(first/cols)+.5)*cell};
+  const dx=point.x-bot.x,dy=point.y-bot.y,len=Math.hypot(dx,dy);return len>5?{x:dx/len,y:dy/len}:{x:0,y:0};
+}
+function updateBot(room,bot,players,now){
+  if(!bot.alive)return;
+  const enemies=players.filter(p=>p.alive && p.role!==bot.role);
+  enemies.sort((a,b)=>distance(bot,a)-distance(bot,b));
+  const enemy=enemies[0];if(!enemy)return;
+  if(now<(bot.nextThinkAt||0))return;
+  bot.nextThinkAt=now+450;
+  let target;
+  if(bot.role==='monster') target=enemy;
+  else if(distance(bot,enemy)<360){
+    const dx=bot.x-enemy.x,dy=bot.y-enemy.y,len=Math.hypot(dx,dy)||1;
+    target={x:clamp(bot.x+dx/len*350,45,WIDTH-45),y:clamp(bot.y+dy/len*350,45,HEIGHT-45)};
+  } else {
+    if(!bot.wander || distance(bot,bot.wander)<50 || now>(bot.wanderUntil||0)){bot.wander=spawn(room.map,[], 'civilian');bot.wanderUntil=now+5000;}
+    target=bot.wander;
+  }
+  const dir=botDirection(room,bot,target);bot.dx=dir.x;bot.dy=dir.y;
+  bot.boost=distance(bot,enemy)<240 && bot.stamina>25;bot.lastInputAt=now;
 }
 let ticks=0;
 setInterval(()=>{
@@ -352,6 +397,7 @@ setInterval(()=>{
     if(room.status!=='playing') continue;
     const players=active(room);
     const dt=TICK_MS/1000;
+    for(const p of players)if(p.bot)updateBot(room,p,players,now);
     for(const p of players) {
       if(!p.alive) continue;
       if(p.lastInputAt && now-p.lastInputAt>600){p.dx=p.dy=0;p.boost=false;}

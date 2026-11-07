@@ -80,6 +80,8 @@
     playNote('ready');buzz();
   }
   $('createBtn').addEventListener('click',()=>request('create',{name:saveName()},entered));
+  $('practiceRunner').addEventListener('click',()=>request('practice',{name:saveName(),role:'civilian'},entered));
+  $('practiceMonster').addEventListener('click',()=>request('practice',{name:saveName(),role:'monster'},entered));
   $('joinBtn').addEventListener('click',()=>{
     const code=$('joinCode').value.trim().toUpperCase();
     if(!/^[A-Z2-9]{6}$/.test(code))return toast('6자리 초대 코드를 입력하세요.');
