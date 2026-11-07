@@ -25,3 +25,25 @@
 .practice-label { margin: 15px 0 8px; color: #b3c4dc; font-size: 12px; text-align: center; }
 .practice-buttons { display: flex; gap: 8px; }
 .practice-buttons .btn { flex: 1; padding: 11px 5px; font-size: 13px; min-width: 0; }
+
+/* NIGHT RUN: moonlit violet arcade theme. */
+:root{--mint:#bf92ff;--pink:#e184ff;--bg:#050a1b;--border:#a583ff55}
+#app{background:radial-gradient(ellipse at 50% 18%,#24335f,#071126 58%,#030817)}
+.home-screen{background:radial-gradient(ellipse at 50% 23%,#202d5b8a,#070e20d9 70%),linear-gradient(#07102d70,#050b18f0)}
+.moon-halo{background:radial-gradient(circle at 52% 45%,#a18bff55 0 23%,#4a69bd23 46%,transparent 75%)}
+.moon-halo::before{border-color:#cfb2ff55;box-shadow:0 0 32px #9b6cff65,0 0 0 24px #a671ff0b,0 0 0 47px #8ba8ff09}
+.hero-kicker,.tiny-label,.result-kicker{color:#ceabff}.hero h1>span,.section-heading h2 em,.role-reveal h2,.result-hero h2{color:#ddc1ff;text-shadow:0 0 20px #a64cff99}.hero h1{font-style:italic;letter-spacing:3px}
+.home-panel,.lobby-panel,.result-panel{background:linear-gradient(155deg,#142543ee,#080e26f5);border:1px solid #a88aff80;box-shadow:0 0 22px #743bd633,inset 0 0 25px #7166ff10}
+.input{background:#080d22;border-color:#a78aff67}.input:focus{border-color:#dfb4ff}
+.btn-primary{background:linear-gradient(145deg,#472289,#7b2fce 45%,#53208f);color:#fff;border:2px solid #d7a8ff;box-shadow:inset 0 0 14px #f4caff44,0 0 19px #aa49ff8c;text-shadow:0 2px 5px #270042}
+.btn-secondary{background:linear-gradient(150deg,#1e3561,#121c3d);border:1px solid #8fb5ff85;color:#f0edff}.btn-outline{border-color:#c695ff9a;color:#e4caff}.room-code{color:#f0dfff;text-shadow:0 0 14px #b46bff}
+.panel-screen{background:radial-gradient(ellipse at 50% 0,#28375e,#080f24 58%,#040a18)}.countdown-screen{background:radial-gradient(ellipse at 50% 42%,#48266c,#080b22 72%)}
+.hud-row>div,.map-tag,.room-tag{background:#080b22e8;border-color:#a98eff70;box-shadow:0 2px 12px #10032399}.role-tag.monster-tag{color:#d29aff}.timer-icon{color:#e1c0ff}.meter-fill{background:linear-gradient(90deg,#a25aff,#ebc0ff)}
+.joystick{background:radial-gradient(circle,#273454aa,#080f24e8);border-color:#b5c4ef88}.joystick-knob{background:radial-gradient(circle at 35% 25%,#e4e9fb,#72809d);border-color:#e3e8fb}
+.action-button{border-radius:50%;border:2px solid #93b7f9a0;background:radial-gradient(circle at 35% 20%,#344b75,#091228);box-shadow:inset 0 0 17px #aabaff20,0 4px 18px #0009}.skill-button{background:radial-gradient(circle at 35% 20%,#276364,#09272e);border-color:#5dd3d8}.sprint-button{height:105px;color:white;border-color:#e1b5ff;background:radial-gradient(circle at 35% 20%,#8448c9,#261244 75%);box-shadow:0 0 20px #ad54ffb5,inset 0 0 17px #cda0ff52}.sprint-button>small{color:#dec4f4}.skill-button.monster-skill{border-color:#c879f9;background:#31194b}
+@media(max-height:740px){.sprint-button{height:94px}}
+
+.hero-monster,.hero-runner{font-size:0!important;background-repeat:no-repeat;background-position:center;background-size:contain;filter:drop-shadow(0 0 14px #9a55ff90)}
+.hero-monster{width:176px;height:140px;left:0;top:23px;background-image:url('/assets/monster-v1.png')}
+.hero-runner{width:128px;height:125px;right:0;top:70px;background-image:url('/assets/runner-v1.png')}
+@media(max-height:740px){.hero-monster{width:133px;height:95px;left:0;top:6px}.hero-runner{width:100px;height:95px;right:0;top:35px}}
